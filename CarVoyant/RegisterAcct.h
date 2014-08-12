@@ -9,12 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <Social/Social.h>
 #import <Twitter/Twitter.h>
-#import <FacebookSDK/FacebookSDK.h>
-#import "ASIFormDataRequest.h"
 #import "GradientButton.h"
-#import "LIALinkedInApplication.h"
-#import "LIALinkedInHttpClient.h"
-#import "defs.h"
 
 @interface RegisterAcct : UIViewController<UIPickerViewDelegate, UIPickerViewDataSource, UIPopoverControllerDelegate, UIActionSheetDelegate>
 {
@@ -28,6 +23,11 @@
 @property(nonatomic,retain) IBOutlet UITextField *stateField;
 @property(nonatomic,retain) IBOutlet UITextField *zipField;
 @property(nonatomic,retain) IBOutlet UITextField *countryField;
+
+@property(nonatomic,retain) IBOutlet UITextField *makeField;
+@property(nonatomic,retain) IBOutlet UITextField *modelField;
+@property(nonatomic,retain) IBOutlet UITextField *yearField;
+
 @property(nonatomic,retain) IBOutlet UIButton *buttonPostStatus;
 
 @property(nonatomic,retain) UIActionSheet *pickerSheet;

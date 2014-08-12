@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>374DEEB1-1781-4028-9BC2-B74F7DF373C8</string>
+	<key>IDESourceControlProjectName</key>
+	<string>CarVoyant</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>3987C9F3-1311-43DE-A371-7880CAC016DB</key>
+		<string>https://github.com/mikeholp87/Carvoyant.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>CarVoyant.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>3987C9F3-1311-43DE-A371-7880CAC016DB</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/mikeholp87/Carvoyant.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>3987C9F3-1311-43DE-A371-7880CAC016DB</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>3987C9F3-1311-43DE-A371-7880CAC016DB</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CarVoyant</string>
+		</dict>
+	</array>
+</dict>
+</plist>

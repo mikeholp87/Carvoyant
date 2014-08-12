@@ -10,13 +10,15 @@
 
 @implementation MapPoint
 @synthesize name = _name;
-@synthesize address = _address;
+@synthesize datetime = _datetime;
+@synthesize distance = _distance;
 @synthesize coordinate = _coordinate;
 
--(id)initWithName:(NSString*)name address:(NSString*)address coordinate:(CLLocationCoordinate2D)coordinate {
+-(id)initWithName:(NSString*)name datetime:(NSString*)dt distance:(CLLocationDistance)distance coordinate:(CLLocationCoordinate2D)coordinate {
     if ((self = [super init])) {
         _name = [name copy];
-        _address = [address copy];
+        _datetime = [dt copy];
+        _distance = distance;
         _coordinate = coordinate;
     }
     return self;
@@ -30,11 +32,11 @@
 }
 
 -(NSString *)subtitle {
-    return _address;
+    return _datetime;
 }
 
 - (MKMapItem*)mapItem {
-    NSDictionary *addressDict = @{(NSString*)kABPersonAddressStreetKey : _address};
+    NSDictionary *addressDict = @{(NSString*)kABPersonAddressStreetKey : _datetime};
     
     MKPlacemark *placemark = [[MKPlacemark alloc] initWithCoordinate:self.coordinate addressDictionary:addressDict];
     

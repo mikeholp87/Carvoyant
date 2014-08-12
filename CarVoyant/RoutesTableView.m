@@ -57,6 +57,11 @@
     locationManager = [[CLLocationManager alloc] init];
     locationManager.delegate = self;
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    
+    if([[UIDevice currentDevice].systemVersion floatValue] >= 8.0){
+        [locationManager requestWhenInUseAuthorization];
+        [locationManager requestAlwaysAuthorization];
+    }
     [locationManager startUpdatingLocation];
     
     userCoordinate = locationManager.location.coordinate;

@@ -11,14 +11,12 @@
 #import <CoreLocation/CoreLocation.h>
 #import "ASIFormDataRequest.h"
 #import "SBJson.h"
-#import "GADBannerView.h"
 #import "MBProgressHUD.h"
 #import "MapPoint.h"
-#import "defs.h"
 
 #define kGOOGLE_API_KEY @"AIzaSyDqlg5O5Hno1yp4hBSOw9yqYlk1R7HO5jw"
 
-@interface NearbyPlaces : UIViewController<MKMapViewDelegate, CLLocationManagerDelegate, UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate, UISearchBarDelegate, UISearchDisplayDelegate, UITableViewDataSource, UITableViewDelegate, GADBannerViewDelegate>
+@interface NearbyPlaces : UIViewController<MKMapViewDelegate, CLLocationManagerDelegate, UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate, UISearchBarDelegate, UISearchDisplayDelegate, UITableViewDataSource, UITableViewDelegate>
 {
     NSString *placeType;
     
@@ -28,7 +26,6 @@
     NSMutableArray *test;
 }
 
-@property (nonatomic, retain) GADBannerView *bannerView;
 @property (nonatomic,retain) CLLocationManager *locationManager;
 @property (nonatomic,retain) NSMutableArray *placesArray;
 @property (nonatomic,retain) NSMutableDictionary *placeNames;

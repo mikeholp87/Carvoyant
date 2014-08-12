@@ -9,7 +9,7 @@
 #import "RegisterAcct.h"
 
 @implementation RegisterAcct
-@synthesize emailField, passwdField, cityField, stateField, zipField, countryField, buttonPostStatus;
+@synthesize emailField, passwdField, cityField, stateField, zipField, countryField, modelField, makeField, yearField, buttonPostStatus;
 @synthesize segControl, countryPicker, pickerSheet, popoverController, confirmBtn, cancelBtn, settings;
 
 //Constants for view manipulation during keyboard usage
@@ -82,7 +82,7 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
 
 - (void)createAcct
 {
-    if([self validateEmail:emailField.text] && passwdField.text.length > 0 && cityField.text.length > 0 && stateField.text.length > 0 && zipField.text.length > 0){
+    if([self validateEmail:emailField.text] && passwdField.text.length > 0 && cityField.text.length > 0 && stateField.text.length > 0 && zipField.text.length > 0 && modelField.text.length > 0 && makeField.text.length > 0 && yearField.text.length > 0){
         [self registerUser];
     }else{
         [[[UIAlertView alloc] initWithTitle:@"Dude Alert" message:@"Please fill in all fields before proceeding." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
@@ -90,243 +90,14 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
 }
 
 - (void)registerUser{
-    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:DEV_RLSE]];
-    if([[UIDevice currentDevice].systemVersion floatValue] >= 6.0)
-        [request setPostValue:[[[UIDevice currentDevice] identifierForVendor] UUIDString] forKey:@"udid"];
-    else{
-        NSString *udid = nil;
-        CFUUIDRef uuid = CFUUIDCreate(NULL);
-        if (uuid) {
-            udid = (NSString *)CFBridgingRelease(CFUUIDCreateString(NULL, uuid));
-            CFRelease(uuid);
-        }
-        [request setPostValue:udid forKey:@"udid"];
-    }
-    [request setPostValue:emailField.text forKey:@"email"];
-    [request setPostValue:passwdField.text forKey:@"password"];
-    [request setPostValue:cityField.text forKey:@"city"];
-    [request setPostValue:stateField.text forKey:@"state"];
-    [request setPostValue:zipField.text forKey:@"zipcode"];
-    [request setPostValue:@"register_user" forKey:@"cmd"];
-    [request setDelegate:self];
-    [request startAsynchronous];
+    //UIViewController *profile = [self.storyboard instantiateViewControllerWithIdentifier:@"UserProfile"];
+    //[self.navigationController pushViewController:profile animated:YES];
+    [self.navigationController popToRootViewControllerAnimated:YES];
 }
 
 - (void)cancelAcct
 {
     [self.navigationController popViewControllerAnimated:YES];
-}
-
-- (void)requestFinished:(ASIHTTPRequest *)request
-{
-    NSString *jsonString = [request responseString];
-    NSLog(@"%@", jsonString);
-    
-    if([jsonString isEqualToString:@"User exists"]){
-        [[[UIAlertView alloc] initWithTitle:@"User Exists" message:@"A user with this email address already exists. Please try again." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
-    }else{
-        UINavigationController *DWMC_NavBar = [self.storyboard instantiateViewControllerWithIdentifier:@"DWMC_NavController"];
-        [self presentViewController:DWMC_NavBar animated:YES completion:nil];
-    }
-}
-
-- (void)requestFailed:(ASIHTTPRequest *)request
-{
-    NSError *error = [request error];
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Dude Alert" message:[error localizedDescription] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-    [alert show];
-}
-
-/****************************************************************************/
-/*								Social Networks                             */
-/****************************************************************************/
-
-// Convenience method to perform some action that requires the "publish_actions" permissions.
-- (void)performPublishAction:(void (^)(void)) action {
-    if([[FBSession activeSession] isOpen]){
-        // we defer request for permission to post to the moment of post, then we check for the permission
-        if ([FBSession.activeSession.permissions indexOfObject:@"publish_actions"] == NSNotFound) {
-            // if we don't already have the permission, then we request it now
-            [FBSession.activeSession requestNewPublishPermissions:@[@"publish_actions"] defaultAudience:FBSessionDefaultAudienceFriends completionHandler:^(FBSession *session, NSError *error) {
-                if (!error) {
-                    action();
-                } else if (error.fberrorCategory != FBErrorCategoryUserCancelled){
-                    [[[UIAlertView alloc] initWithTitle:@"Permission denied" message:@"Unable to get permission to post" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
-                }
-            }];
-        }else{
-            action();
-        }
-    }else{
-        [[[UIAlertView alloc] initWithTitle:@"Facebook Error" message:@"Please login before posting." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
-    }
-}
-
-- (IBAction)postStatusUpdateClick:(UIButton *)sender {
-    NSURL *urlToShare = [NSURL URLWithString:@"http://www.dwmcapp.com"];
-    
-    // If it is available, we will first try to post using the share dialog in the Facebook app
-    FBAppCall *appCall = [FBDialogs presentShareDialogWithLink:urlToShare name:@"Dude Where's My Car?" caption:nil description:@"I just created an account! Never Lose Your Car Again... and much more! Download for free on the App Store!" picture:nil clientState:nil handler:^(FBAppCall *call, NSDictionary *results, NSError *error) {
-        if (error) {
-            NSLog(@"Error: %@", error.description);
-        } else {
-            NSLog(@"Success!");
-            
-            [self setNetworkShare:@"facebook"];
-        }
-    }];
-    
-    if (!appCall) {
-        // Next try to post using Facebook's iOS6 integration
-        BOOL displayedNativeDialog = [FBDialogs presentOSIntegratedShareDialogModallyFrom:self initialText:nil image:nil url:urlToShare handler:nil];
-        
-        if (!displayedNativeDialog) {
-            // Lastly, fall back on a request for permissions and a direct post using the Graph API
-            [self performPublishAction:^{
-                NSString *message = [NSString stringWithFormat:@"I just created an account! Never Lose Your Car Again... and much more! Download for free on the App Store!"];
-                
-                FBRequestConnection *connection = [[FBRequestConnection alloc] init];
-                
-                connection.errorBehavior = FBRequestConnectionErrorBehaviorReconnectSession| FBRequestConnectionErrorBehaviorAlertUser|FBRequestConnectionErrorBehaviorRetry;
-                
-                [connection addRequest:[FBRequest requestForPostStatusUpdate:message] completionHandler:^(FBRequestConnection *connection, id result, NSError *error) {
-                    [self showAlert:message result:result error:error];
-                }];
-                [connection start];
-            }];
-        }
-    }
-}
-
-// UIAlertView helper for post buttons
-- (void)showAlert:(NSString *)message result:(id)result error:(NSError *)error {
-    NSString *alertMsg;
-    NSString *alertTitle;
-    if (error) {
-        alertTitle = @"Error";
-        // Since we use FBRequestConnectionErrorBehaviorAlertUser,
-        // we do not need to surface our own alert view if there is an
-        // an fberrorUserMessage unless the session is closed.
-        if (error.fberrorUserMessage && FBSession.activeSession.isOpen) {
-            alertTitle = nil;
-            
-        } else {
-            // Otherwise, use a general "connection problem" message.
-            alertMsg = @"Operation failed due to a connection problem, retry later.";
-        }
-    } else {
-        NSDictionary *resultDict = (NSDictionary *)result;
-        alertMsg = [NSString stringWithFormat:@"Successfully posted '%@'.", message];
-        NSString *postId = [resultDict valueForKey:@"id"];
-        if (!postId) {
-            postId = [resultDict valueForKey:@"postId"];
-        }
-        if (postId) {
-            alertMsg = [NSString stringWithFormat:@"%@\nPost ID: %@", alertMsg, postId];
-        }
-        alertTitle = @"Success";
-    }
-    
-    if (alertTitle) {
-        [[[UIAlertView alloc] initWithTitle:alertTitle message:alertMsg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
-    }
-}
-
-- (void)setNetworkShare:(NSString *)network
-{
-    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:DEV_RLSE]];
-    if([[UIDevice currentDevice].systemVersion floatValue] >= 6.0)
-        [request setPostValue:[[[UIDevice currentDevice] identifierForVendor] UUIDString] forKey:@"udid"];
-    else{
-        NSString *udid = nil;
-        CFUUIDRef uuid = CFUUIDCreate(NULL);
-        if (uuid) {
-            udid = (NSString *)CFBridgingRelease(CFUUIDCreateString(NULL, uuid));
-            CFRelease(uuid);
-        }
-        [request setPostValue:udid forKey:@"udid"];
-    }
-    if([network isEqualToString:@"facebook"])
-        [request setPostValue:@"Facebook" forKey:@"network"];
-    else
-        [request setPostValue:@"Twitter" forKey:@"network"];
-    [request setPostValue:@"add_sharing" forKey:@"cmd"];
-    [request setDelegate:self];
-    [request setTag:1];
-    [request startAsynchronous];
-}
-
-- (IBAction)sendTweet:(id)sender
-{
-    if([[UIDevice currentDevice].systemVersion floatValue] >= 6.0)
-    {
-        if([SLComposeViewController isAvailableForServiceType:SLServiceTypeTwitter]){
-            SLComposeViewController *controller = [SLComposeViewController composeViewControllerForServiceType:SLServiceTypeTwitter];
-            
-            SLComposeViewControllerCompletionHandler myBlock = ^(SLComposeViewControllerResult result){
-                if (result == SLComposeViewControllerResultCancelled)
-                    NSLog(@"Cancelled");
-                else{
-                    NSLog(@"Done");
-                    
-                    [self setNetworkShare:@"twitter"];
-                }
-                
-                [controller dismissViewControllerAnimated:YES completion:Nil];
-            };
-            controller.completionHandler = myBlock;
-            
-            [controller setInitialText:@"I just created an account on Dude Where's My Car? Free App! #DWMC"];
-            [controller addURL:[NSURL URLWithString:@"www.dwmcapp.com"]];
-            [controller addImage:[UIImage imageNamed:@"AppIconLarge_144.png"]];
-            [self presentViewController:controller animated:YES completion:nil];
-            
-        }
-        else{
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Sorry" message:@"You can't send a tweet right now, make sure your device has an internet connection and you have at least one Twitter account setup." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [alertView show];
-        }
-    }else{
-        if ([TWTweetComposeViewController canSendTweet]) {
-            TWTweetComposeViewController *vc = [[TWTweetComposeViewController alloc] init];
-            [vc setInitialText:@"I just created an account on Dude Where's My Car? Free App! #DWMC"];
-            UIImage *image = [UIImage imageNamed:@"AppIconLarge_144.png"];
-            [vc addImage:image];
-            NSURL *url = [NSURL URLWithString:@"http://www.dwmcapp.com"];
-            [vc addURL:url];
-            [vc setCompletionHandler:^(TWTweetComposeViewControllerResult result) {
-                [self dismissModalViewControllerAnimated:YES];
-            }];
-            [self presentViewController:vc animated:YES completion:nil];
-        } else {
-            NSString *message = @"The application cannot send a tweet at the moment. This is because it cannot reach Twitter or you don't have a Twitter account associated with this device.";
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Oops" message:message delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil];
-            [alertView show];
-        }
-    }
-}
-
-- (IBAction)postLinkedIn:(id)sender
-{
-    LIALinkedInApplication *application = [LIALinkedInApplication applicationWithRedirectURL:@"http://www.dwmcapp.com" clientId:@"y10xfodl0kgj" clientSecret:@"U2DK2ZoQmCKMtkUB" state:@"DCEEFWF45453sdffef424" grantedAccess:@[@"r_basicprofile", @"r_fullprofile", @"r_emailaddress", @"r_network", @"r_contactinfo", @"r_fullprofile"]];
-    LIALinkedInHttpClient *client = [LIALinkedInHttpClient clientForApplication:application presentingViewController:nil];
-    
-    [client getAuthorizationCode:^(NSString * code) {
-        [client getAccessToken:code success:^(NSDictionary *accessTokenData) {
-            NSString *accessToken = [accessTokenData objectForKey:@"access_token"];
-            [client getPath:[NSString stringWithFormat:@"https://api.linkedin.com/v1/people/~?oauth2_access_token=%@&format=json", accessToken] parameters:nil success:^(AFHTTPRequestOperation * operation, NSDictionary *result) {
-                NSLog(@"current user %@", result);
-            } failure:^(AFHTTPRequestOperation * operation, NSError *error) {
-                NSLog(@"failed to fetch current user %@", error);
-            }];
-        } failure:^(NSError *error) {
-            NSLog(@"Quering accessToken failed %@", error);
-        }];
-    } cancel:^{
-        NSLog(@"Authorization was cancelled by user");
-    } failure:^(NSError *error) {
-        NSLog(@"Authorization failed %@", error);
-    }];
 }
 
 -(BOOL)validatePhone:(NSString*)phoneString
@@ -385,7 +156,6 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
     [toolbar sizeToFit];
     
     segControl = [[UISegmentedControl alloc] initWithItems:@[@"Previous", @"Next"]];
-    [segControl setSegmentedControlStyle:UISegmentedControlStyleBar];
     segControl.momentary = YES;
     
     UIBarButtonItem *flexibleItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
@@ -463,6 +233,9 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
             else if(cityField.isEditing) [passwdField becomeFirstResponder];
             else if(stateField.isEditing) [cityField becomeFirstResponder];
             else if(zipField.isEditing) [stateField becomeFirstResponder];
+            else if(makeField.isEditing) [zipField becomeFirstResponder];
+            else if(modelField.isEditing) [makeField becomeFirstResponder];
+            else if(yearField.isEditing) [modelField becomeFirstResponder];
         }
             break;
         case 1:{
@@ -470,6 +243,9 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
             else if(passwdField.isEditing) [cityField becomeFirstResponder];
             else if(cityField.isEditing) [stateField becomeFirstResponder];
             else if(stateField.isEditing) [zipField becomeFirstResponder];
+            else if(zipField.isEditing) [makeField becomeFirstResponder];
+            else if(makeField.isEditing) [modelField becomeFirstResponder];
+            else if(modelField.isEditing) [yearField becomeFirstResponder];
         }
             break;
     }
@@ -516,7 +292,7 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
     if (textField == emailField){
         [segControl setEnabled:NO forSegmentAtIndex:0];
         [segControl setEnabled:YES forSegmentAtIndex:1];
-    }else if (textField == zipField){
+    }else if (textField == yearField){
         [segControl setEnabled:YES forSegmentAtIndex:0];
         [segControl setEnabled:NO forSegmentAtIndex:1];
     }else if (textField == countryField){
@@ -557,9 +333,13 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
         NSUInteger newLength = [textField.text length] + [string length] - range.length;
         return (newLength > 2) ? NO : YES;
     }
-    if(textField == zipField){
+    else if(textField == zipField){
         NSUInteger newLength = [textField.text length] + [string length] - range.length;
         return (newLength > 5) ? NO : YES;
+    }
+    else if(textField == yearField){
+        NSUInteger newLength = [textField.text length] + [string length] - range.length;
+        return (newLength > 4) ? NO : YES;
     }
     /*
      if(textField == emailField) {
@@ -589,6 +369,9 @@ static const CGFloat LANDSCAPE_KEYBOARD_HEIGHT = 162;
     [cityField resignFirstResponder];
     [stateField resignFirstResponder];
     [zipField resignFirstResponder];
+    [modelField resignFirstResponder];
+    [makeField resignFirstResponder];
+    [yearField resignFirstResponder];
     if (!countryPicker.hidden) {
         countryField.text = [countryCodes objectAtIndex:[countryPicker selectedRowInComponent:0]];
         [countryPicker setHidden:YES];

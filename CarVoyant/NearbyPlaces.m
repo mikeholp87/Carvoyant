@@ -12,7 +12,7 @@
 #define kTabTintColor [UIColor colorWithRed:26/255.0 green:152/255.0 blue:217/255.0 alpha:1.000]
 
 @implementation NearbyPlaces
-@synthesize nearbyMap, locationManager, userCoordinate, stationCoordinate, placesArray, placeNames, toolbar, placesButton, searchBar, searchDisplayController, searchResults, segControl, nearbyTable, bannerView;
+@synthesize nearbyMap, locationManager, userCoordinate, stationCoordinate, placesArray, placeNames, toolbar, placesButton, searchBar, searchDisplayController, searchResults, segControl, nearbyTable;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
@@ -27,7 +27,7 @@
 {
     [super viewDidLoad];
     
-    self.title = @"Nearby Lodging";
+    self.title = @"Repair Shops";
     
     if([[UIDevice currentDevice].systemVersion floatValue] >= 7.0){
         self.edgesForExtendedLayout = UIRectEdgeNone;
@@ -44,39 +44,60 @@
     UIBarButtonItem *refresh = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(retrievePlaces)];
     [self.navigationItem setRightBarButtonItem:refresh];
     
-    [nearbyMap setShowsUserLocation:YES];
-    locationManager = [[CLLocationManager alloc] init];
-    [locationManager setDelegate:self];
-    [locationManager setDesiredAccuracy:kCLLocationAccuracyBestForNavigation];
-    [locationManager startUpdatingLocation];
+    placeType = @"car_repair";
     
-    userCoordinate = locationManager.location.coordinate;
-    [nearbyMap setCenterCoordinate:userCoordinate animated:YES];
-    
-    placeType = @"lodging";
-    
+    [self setUserLocation];
     [self retrievePlaces];
-}
-
-- (void)viewDidAppear:(BOOL)animated
-{
-    CGPoint origin = CGPointMake(0.0, self.view.frame.size.height - CGSizeFromGADAdSize(kGADAdSizeBanner).height);
-    bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeBanner origin:origin];
-    bannerView.adUnitID = GAD_UNIT_ID;
-    bannerView.rootViewController = self;
-    bannerView.delegate = self;
-    [self.view addSubview:bannerView];
-    bannerView.center = CGPointMake(self.view.center.x, self.bannerView.center.y - 44.0);
-    GADRequest *request = [GADRequest request];
-    [request setLocationWithLatitude:userCoordinate.latitude longitude:userCoordinate.longitude accuracy:10.0];
-    request.testing = GAD_TEST;
-    request.testDevices = [NSArray arrayWithObjects:GAD_SIMULATOR_ID, nil];
-    [bannerView loadRequest:request];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
     self.navigationController.toolbar.hidden = NO;
+}
+
+-(void)setUserLocation
+{
+    locationManager = [[CLLocationManager alloc] init];
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    locationManager.distanceFilter = kCLDistanceFilterNone;
+    
+    if([CLLocationManager locationServicesEnabled]){
+        switch([CLLocationManager authorizationStatus]){
+            case kCLAuthorizationStatusAuthorized:
+                if([[UIDevice currentDevice].systemVersion floatValue] >= 8.0){
+                    [locationManager requestWhenInUseAuthorization];
+                    [locationManager requestAlwaysAuthorization];
+                }
+                [locationManager startUpdatingLocation];
+                break;
+            case kCLAuthorizationStatusDenied:
+                [[[UIAlertView alloc] initWithTitle:@"Location Services" message:@"Denied" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+                break;
+            case kCLAuthorizationStatusRestricted:
+                [[[UIAlertView alloc] initWithTitle:@"Location Services" message:@"Restricted by Parental Controls" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+                break;
+            case kCLAuthorizationStatusAuthorizedWhenInUse:
+                [[[UIAlertView alloc] initWithTitle:@"Location Services" message:@"Restricted by Parental Controls" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+                break;
+            case kCLAuthorizationStatusNotDetermined:
+                [[[UIAlertView alloc] initWithTitle:@"Location Services" message:@"Location Services Disabled" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+                break;
+        }
+    }
+    
+    userCoordinate = locationManager.location.coordinate;
+    [nearbyMap showsUserLocation];
+    [nearbyMap setUserTrackingMode:MKUserTrackingModeFollow animated:YES];
+    [nearbyMap setCenterCoordinate:userCoordinate];
+    
+    MKCoordinateRegion region;
+    region.center.latitude = userCoordinate.latitude;
+    region.center.longitude = userCoordinate.longitude;
+    region.span.latitudeDelta = 0.5;
+    region.span.longitudeDelta = 0.5;
+    region = [nearbyMap regionThatFits:region];
+    [nearbyMap setRegion:region animated:YES];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
@@ -87,27 +108,15 @@
 
 - (void)retrievePlaces
 {
-    if([placeType isEqualToString:@"gas_station"]){
-        NSString *url = [NSString stringWithFormat:@"http://devapi.mygasfeed.com/stations/radius/%f/%f/2/reg/price/rfej9napna.json", userCoordinate.latitude, userCoordinate.longitude];
-        
-        //Formulate the string as a URL object.
-        NSURL *gasFeedRequestURL = [NSURL URLWithString:url];
-        
-        ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:gasFeedRequestURL];
-        [request setDelegate:self];
-        [request setTag:0];
-        [request startAsynchronous];
-    }else{
-        NSString *url = [NSString stringWithFormat:@"https://maps.googleapis.com/maps/api/place/search/json?location=%f,%f&radius=%@&types=%@&sensor=true&key=%@", userCoordinate.latitude, userCoordinate.longitude, [NSString stringWithFormat:@"%i", 5000], placeType, kGOOGLE_API_KEY];
-        
-        //Formulate the string as a URL object.
-        NSURL *googleRequestURL = [NSURL URLWithString:url];
-        
-        ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:googleRequestURL];
-        [request setDelegate:self];
-        [request setTag:1];
-        [request startAsynchronous];
-    }
+    NSString *url = [NSString stringWithFormat:@"https://maps.googleapis.com/maps/api/place/search/json?location=%f,%f&radius=%@&types=%@&sensor=true&key=%@", userCoordinate.latitude, userCoordinate.longitude, [NSString stringWithFormat:@"%i", 5000], placeType, kGOOGLE_API_KEY];
+    
+    //Formulate the string as a URL object.
+    NSURL *googleRequestURL = [NSURL URLWithString:url];
+    
+    ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:googleRequestURL];
+    [request setDelegate:self];
+    [request setTag:1];
+    [request startAsynchronous];
 }
 
 -(MKAnnotationView *)mapView:(MKMapView *)mapView viewForAnnotation:(id <MKAnnotation>)annotation
@@ -190,49 +199,32 @@
     userCoordinate = locationManager.location.coordinate;
     [nearbyMap setCenterCoordinate:userCoordinate animated:YES];
     
+    NSLog(@"%@", placesArray);
+    
     // 2 - Loop through the array of places returned from the Google API.
-    if([placeType isEqualToString:@"gas_station"]){
-        for (int i=0; i<[placesArray count]; i++) {
-            NSString *address = [[placesArray objectAtIndex:i] objectAtIndex:0];
-            NSString *station = [NSString stringWithFormat:@"%@",[[placesArray objectAtIndex:i] objectAtIndex:1]];
-            if([station isEqualToString:@"<null>"]) station = @"Generic";
-            NSString *price = [NSString stringWithFormat:@"%@",[[placesArray objectAtIndex:i] objectAtIndex:2]];
-            if([price isEqualToString:@"N/A"]) price = @"?";
-            stationCoordinate.longitude = [[[placesArray objectAtIndex:i] objectAtIndex:3] floatValue];
-            stationCoordinate.latitude = [[[placesArray objectAtIndex:i] objectAtIndex:4] floatValue];
-            
-            CLLocation *stationCoord = [[CLLocation alloc] initWithLatitude:stationCoordinate.latitude longitude:stationCoordinate.longitude];
-            CLLocation *userCoord = [[CLLocation alloc] initWithLatitude:userCoordinate.latitude longitude:userCoordinate.longitude];
-            CLLocationDistance distance = [stationCoord distanceFromLocation:userCoord];
-            
-            MapPoint *placeObject = [[MapPoint alloc] initWithName:[NSString stringWithFormat:@"%@ - $%@", station, price] address:address distance:distance coordinate:stationCoordinate];
-            [nearbyMap addAnnotation:placeObject];
-        }
-    }else{
-        for (int i=0; i<[placesArray count]; i++) {
-            //Retrieve the NSDictionary object in each index of the array.
-            NSDictionary *place = [placesArray objectAtIndex:i];
-            // 3 - There is a specific NSDictionary object that gives us the location info.
-            NSDictionary *geo = [place objectForKey:@"geometry"];
-            // Get the lat and long for the location.
-            NSDictionary *loc = [geo objectForKey:@"location"];
-            // 4 - Get your name and address info for adding to a pin.
-            NSString *name = [place objectForKey:@"name"];
-            NSString *vicinity = [place objectForKey:@"vicinity"];
-            // Create a special variable to hold this coordinate info.
-            CLLocationCoordinate2D placeCoord;
-            // Set the lat and long.
-            placeCoord.latitude = [[loc objectForKey:@"lat"] doubleValue];
-            placeCoord.longitude = [[loc objectForKey:@"lng"] doubleValue];
-            
-            CLLocation *stationCoord = [[CLLocation alloc] initWithLatitude:placeCoord.latitude longitude:placeCoord.longitude];
-            CLLocation *userCoord = [[CLLocation alloc] initWithLatitude:userCoordinate.latitude longitude:userCoordinate.longitude];
-            CLLocationDistance distance = [stationCoord distanceFromLocation:userCoord];
-            
-            // 5 - Create a new annotation.
-            MapPoint *placeObject = [[MapPoint alloc] initWithName:name address:vicinity distance:distance coordinate:placeCoord];
-            [nearbyMap addAnnotation:placeObject];
-        }
+    for (int i=0; i<[placesArray count]; i++) {
+        //Retrieve the NSDictionary object in each index of the array.
+        NSDictionary *place = [placesArray objectAtIndex:i];
+        // 3 - There is a specific NSDictionary object that gives us the location info.
+        NSDictionary *geo = [place objectForKey:@"geometry"];
+        // Get the lat and long for the location.
+        NSDictionary *loc = [geo objectForKey:@"location"];
+        // 4 - Get your name and address info for adding to a pin.
+        NSString *name = [place objectForKey:@"name"];
+        NSString *vicinity = [place objectForKey:@"vicinity"];
+        // Create a special variable to hold this coordinate info.
+        CLLocationCoordinate2D placeCoord;
+        // Set the lat and long.
+        placeCoord.latitude = [[loc objectForKey:@"lat"] doubleValue];
+        placeCoord.longitude = [[loc objectForKey:@"lng"] doubleValue];
+        
+        CLLocation *stationCoord = [[CLLocation alloc] initWithLatitude:placeCoord.latitude longitude:placeCoord.longitude];
+        CLLocation *userCoord = [[CLLocation alloc] initWithLatitude:userCoordinate.latitude longitude:userCoordinate.longitude];
+        CLLocationDistance distance = [stationCoord distanceFromLocation:userCoord];
+        
+        // 5 - Create a new annotation.
+        MapPoint *placeObject = [[MapPoint alloc] initWithName:name datetime:vicinity distance:distance coordinate:placeCoord];
+        [nearbyMap addAnnotation:placeObject];
     }
 }
 
@@ -257,8 +249,8 @@
     cell.accessoryType = UITableViewCellAccessoryNone;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     
-    cell.textLabel.text = [[placeNames objectForKey:[NSString stringWithFormat:@"%d", indexPath.row]] objectAtIndex:1];
-    cell.detailTextLabel.text = [[placeNames objectForKey:[NSString stringWithFormat:@"%d", indexPath.row]] objectAtIndex:0];
+    cell.textLabel.text = [[placeNames objectForKey:[NSString stringWithFormat:@"%ld", (long)indexPath.row]] objectAtIndex:1];
+    cell.detailTextLabel.text = [[placeNames objectForKey:[NSString stringWithFormat:@"%ld", indexPath.row]] objectAtIndex:0];
     
     return cell;
 }
@@ -288,25 +280,14 @@
     
     SBJsonParser *parser = [[SBJsonParser alloc] init];
     
+    NSLog(@"%@", jsonString);
+    
     NSMutableDictionary *jsonObject = [[NSMutableDictionary alloc] init];
     jsonObject = [parser objectWithString:jsonString error:NULL];
     placesArray = [[NSMutableArray alloc] init];
     placeNames = [[NSMutableDictionary alloc] init];
     
-    if(request.tag == 0){
-        NSMutableArray *results = [jsonObject objectForKey:@"stations"];
-        for(int i=0; i<[results count]; i++){
-            [placesArray addObject:[NSArray arrayWithObjects:[[results objectAtIndex:i] objectForKey:@"address"], [[results objectAtIndex:i] objectForKey:@"station"], [[results objectAtIndex:i] objectForKey:@"price"], [[results objectAtIndex:i] objectForKey:@"lng"], [[results objectAtIndex:i] objectForKey:@"lat"], nil]];
-        }
-        
-        for (int i=0; i<[placesArray count]; i++) {
-            NSString *address = [[placesArray objectAtIndex:i] objectAtIndex:0];
-            NSString *station = [NSString stringWithFormat:@"%@",[[placesArray objectAtIndex:i] objectAtIndex:1]];
-            if([station isEqualToString:@"<null>"]) station = @"Generic";
-            
-            [placeNames setObject:[NSArray arrayWithObjects:address, station, nil] forKey:[NSString stringWithFormat:@"%d",i]];
-        }
-    }else if(request.tag == 1){
+    if(request.tag == 1){
         placesArray = [jsonObject objectForKey:@"results"];
         for(int i=0; i<[placesArray count]; i++){
             [placeNames setObject:[NSArray arrayWithObjects:[[placesArray objectAtIndex:i] objectForKey:@"vicinity"], [[placesArray objectAtIndex:i] objectForKey:@"name"], nil] forKey:[NSString stringWithFormat:@"%d",i]];
@@ -396,12 +377,6 @@
         default:
             break;
     }
-}
-
-- (IBAction)backToStart:(id)sender
-{
-    UINavigationController *main = [self.storyboard instantiateViewControllerWithIdentifier:@"StartupNavController"];
-    [self.navigationController presentViewController:main animated:YES completion:nil];
 }
 
 @end

@@ -13,16 +13,16 @@
 @interface MapPoint : NSObject <MKAnnotation>
 {
     NSString *_name;
-    NSString *_address;
+    NSString *_datetime;
     CLLocationCoordinate2D _coordinate;
 }
 
 @property (copy) NSString *name;
-@property (copy) NSString *address;
+@property (copy) NSString *datetime;
 @property (nonatomic, readonly) CLLocationDistance distance;
 @property (nonatomic, readonly) CLLocationCoordinate2D coordinate;
 
--(id)initWithName:(NSString*)name address:(NSString*)address coordinate:(CLLocationCoordinate2D)coordinate;
+-(id)initWithName:(NSString*)name datetime:(NSString*)dt distance:(CLLocationDistance)distance coordinate:(CLLocationCoordinate2D)coordinate;
 -(MKMapItem*)mapItem;
 
 @end

@@ -7,7 +7,18 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "VehicleDetails.h"
+#import "MBProgressHUD.h"
 
-@interface VehicleInfo : UIViewController
+@interface VehicleInfo : UIViewController<UIWebViewDelegate, UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, retain) NSString *vehicleId;
+@property (nonatomic, retain) NSString *vehicleName;
+@property (nonatomic, strong) NSMutableDictionary *edmunds;
+@property (nonatomic, strong) NSMutableDictionary *photoURLs;
+@property (nonatomic, strong) NSMutableData *buffer;
+@property (nonatomic, strong) NSURLConnection *connection;
+
+@property (nonatomic, retain) IBOutlet UITableView *infoTable;
 
 @end

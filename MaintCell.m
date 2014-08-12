@@ -9,6 +9,7 @@
 #import "MaintCell.h"
 
 @implementation MaintCell
+@synthesize actionLbl, frequencyLbl, mileageLbl, monthLbl, itemLbl, description;
 
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
